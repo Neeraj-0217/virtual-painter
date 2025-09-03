@@ -1,0 +1,9 @@
+# Virtual environment files
+/.venv/
+
+# Python default cache files
+/__pycache__/
+*.pyc
+
+# image files
+*.png
