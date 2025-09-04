@@ -8,8 +8,8 @@ from config import (
     MAX_HANDS,
     DRAW_LANDMARKS,
     WINDOW_NAME,
-    SWIPE_THRESHOLD,
-    SWIPE_COOLDOWN
+    DISPLAY_HEIGHT,
+    DISPLAY_WIDTH
 )
 from hand_tracking.tracker import HandTracker
 from drawing.canvas import Canvas
@@ -28,12 +28,9 @@ def main():
         draw_landmarks=DRAW_LANDMARKS
     )
     success, frame = cap.read()
-    canvas = Canvas(frame.shape[1], frame.shape[0])
+    canvas = Canvas(DISPLAY_WIDTH, DISPLAY_HEIGHT)
 
-    prev_x, prev_y = 0, 0
     prev_point = None
-    prev_swipe_x = None
-    last_swipe_time = 0
 
     # Brush settings
     brush_thickness = 5
@@ -45,8 +42,8 @@ def main():
                 print("Empty frame from camera.")
                 break
 
-            # Mirror for natural UX
-            frame = cv2.flip(frame, 1)
+            frame = cv2.resize(frame, (DISPLAY_WIDTH, DISPLAY_HEIGHT))  # Resize the canvas or frame
+            frame = cv2.flip(frame, 1)  # Mirror the frame
 
             # Detect hands
             results = tracker.process(frame)
@@ -63,11 +60,8 @@ def main():
                 middle_up = is_finger_up(hand_landmarks, 12, 10)
                 all_up = all(is_finger_up(hand_landmarks, tip, tip-2) for tip in [4, 8, 12, 16, 20])
 
-                # Extract wrist landmark
-                wrist_x, wrist_y = tracker.to_pixel(hand_landmarks, frame.shape, 0)
-
                 if index_up and not middle_up:  # Drawing mode
-                    print("Drawing Mode")
+                    # print("Drawing Mode")
                     if canvas.check_toolbar_selection(x, y):
                         prev_point = None
                     else:
@@ -76,19 +70,18 @@ def main():
                         canvas.draw_line(prev_point, (x, y), thickness=brush_thickness)
                         prev_point = (x, y)
                 elif index_up and middle_up and not all_up:    # Selection mode
-                    print("Selection Mode")
+                    # print("Selection Mode")
                     prev_point = None
                     if canvas.check_toolbar_selection(x, y):
                         pass
                 elif all_up:    # Erase Mode
-                    print("Erase Mode")
+                    # print("Erase Mode")
                     if prev_point is None:
                         prev_point = (x, y)
                     canvas.erase(prev_point, (x, y), thickness=brush_thickness*10)
                     prev_point = (x, y)
                 else:
                     prev_point = None
-                    prev_swipe_x = None
 
                 
             output = canvas.overlay_on(frame)                
